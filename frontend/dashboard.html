@@ -1,0 +1,1901 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard — Hotel Vinayagam</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <style>
+      body {
+        background: var(--soft);
+      }
+
+      .dash-header {
+        background: linear-gradient(135deg, #08271f, #0b3d30);
+        color: #fff;
+        padding: 24px;
+      }
+
+      .dash-header .nav {
+        max-width: 1180px;
+        margin: 0 auto;
+      }
+
+      .dash-header .nav-actions {
+        gap: 12px;
+      }
+
+      .dash-header .nav-actions a {
+        color: #fff;
+        text-decoration: none;
+        font-size: 0.88rem;
+        font-weight: 600;
+        opacity: 0.8;
+        transition: opacity 150ms;
+      }
+
+      .dash-header .nav-actions a:hover {
+        opacity: 1;
+      }
+
+      .btn-logout {
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+        padding: 8px 14px;
+        font-size: 0.84rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: background 150ms;
+      }
+
+      .btn-logout:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+
+      .dash-container {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      .dash-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-bottom: 24px;
+      }
+
+      .dash-toolbar h1 {
+        font-size: 1.5rem;
+        margin: 0;
+      }
+
+      .month-nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .month-nav button {
+        display: inline-grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--ink);
+        font-size: 1.1rem;
+        font-weight: 700;
+        transition: background 150ms;
+      }
+
+      .month-nav button:hover {
+        background: var(--soft);
+      }
+
+      .month-nav .month-label {
+        min-width: 180px;
+        text-align: center;
+        font-size: 1.15rem;
+        font-weight: 800;
+      }
+
+      .btn-today {
+        border: 1px solid var(--accent);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--accent-dark);
+        padding: 8px 16px;
+        font-size: 0.85rem;
+        font-weight: 800;
+        transition: background 150ms;
+      }
+
+      .btn-today:hover {
+        background: #e8f6f0;
+      }
+
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-bottom: 20px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--muted);
+      }
+
+      .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+      }
+
+      .calendar-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        box-shadow: 0 12px 24px rgba(24, 32, 29, 0.07);
+        overflow: hidden;
+      }
+
+      .cal-head {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        background: var(--soft);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .cal-head span {
+        padding: 10px 8px;
+        text-align: center;
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+      }
+
+      .cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+      }
+
+      .cal-cell {
+        min-height: 100px;
+        border-right: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        padding: 4px;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+      }
+
+      .cal-cell:hover {
+        background: #f0faf5;
+      }
+
+      .cal-cell:nth-child(7n) {
+        border-right: none;
+      }
+
+      .cal-cell.outside {
+        background: var(--soft);
+        opacity: 0.5;
+      }
+
+      .cal-cell.today {
+        background: #f0faf5;
+      }
+
+      .cal-day {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 2px;
+      }
+
+      .cal-cell.today .cal-day {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .cal-booking {
+        display: block;
+        padding: 2px 5px;
+        margin-bottom: 2px;
+        border-radius: 4px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        line-height: 1.4;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: default;
+      }
+
+      .cal-booking.status-confirmed {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .cal-booking.status-checked-in {
+        background: #cce5ff;
+        color: #004085;
+      }
+
+      .cal-booking.status-completed {
+        background: #e2e3e5;
+        color: #383d41;
+      }
+
+      .cal-booking.status-cancelled {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .cal-booking.status-pending {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .cal-more {
+        font-size: 0.65rem;
+        color: var(--accent);
+        font-weight: 800;
+        padding: 0 5px;
+        cursor: pointer;
+      }
+
+      .cal-more:hover {
+        text-decoration: underline;
+      }
+
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 14px;
+        margin-bottom: 24px;
+      }
+
+      .stat-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 16px;
+        box-shadow: 0 4px 12px rgba(24, 32, 29, 0.04);
+      }
+
+      .stat-card .stat-label {
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 6px;
+      }
+
+      .stat-card .stat-value {
+        font-size: 1.6rem;
+        font-weight: 900;
+        color: var(--ink);
+        margin: 0;
+      }
+
+      .popup-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        z-index: 100;
+        place-items: center;
+      }
+
+      .popup-overlay.open {
+        display: grid;
+      }
+
+      .popup {
+        background: var(--surface);
+        border-radius: 12px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+        padding: 24px;
+        min-width: 320px;
+        max-width: 460px;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+
+      .popup h3 {
+        margin: 0 0 16px;
+        font-size: 1.1rem;
+      }
+
+      .popup-booking {
+        padding: 10px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .popup-booking:last-child {
+        border-bottom: none;
+      }
+
+      .popup-booking .popup-guest {
+        font-weight: 800;
+        font-size: 0.92rem;
+      }
+
+      .popup-booking .popup-meta {
+        color: var(--muted);
+        font-size: 0.82rem;
+        margin-top: 2px;
+      }
+
+      .popup-close {
+        margin-top: 16px;
+        width: 100%;
+        min-height: 40px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--soft);
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .popup-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .popup-actions button {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--ink);
+        padding: 5px 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 150ms;
+      }
+
+      .popup-actions button:hover {
+        background: var(--soft);
+      }
+
+      .popup-actions button.active-status {
+        border-color: var(--accent);
+        background: #e8f6f0;
+        color: var(--accent-dark);
+        cursor: default;
+        opacity: 0.7;
+      }
+
+      .popup-actions button.status-cancelled-btn:hover {
+        background: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+      }
+
+      .loading-msg {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .error-msg {
+        text-align: center;
+        padding: 40px 20px;
+        color: #721c24;
+        background: #f8d7da;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 0.92rem;
+      }
+
+      .room-filter {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .room-filter button {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--ink);
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        transition: all 150ms;
+      }
+
+      .room-filter button.active {
+        border-color: var(--accent);
+        background: #e8f6f0;
+        color: var(--accent-dark);
+      }
+
+      /* Search & Filter Bar */
+      .search-filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 24px;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface);
+        box-shadow: 0 4px 12px rgba(24, 32, 29, 0.04);
+      }
+
+      .search-filter-bar .search-input-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+      }
+
+      .search-filter-bar .search-input-wrap input {
+        width: 100%;
+        min-height: 40px;
+        margin: 0;
+        padding: 0 12px 0 36px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        font-size: 0.88rem;
+        background: var(--soft);
+      }
+
+      .search-filter-bar .search-input-wrap input:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15);
+        background: #fff;
+      }
+
+      .search-filter-bar .search-icon {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--muted);
+        font-size: 0.92rem;
+        pointer-events: none;
+      }
+
+      .search-filter-bar select {
+        min-height: 40px;
+        margin: 0;
+        padding: 0 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        background: var(--soft);
+        color: var(--ink);
+        min-width: 130px;
+      }
+
+      .search-filter-bar select:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15);
+        background: #fff;
+      }
+
+      .date-range-inputs {
+        display: none;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .date-range-inputs.visible {
+        display: flex;
+      }
+
+      .date-range-inputs input {
+        min-height: 40px;
+        margin: 0;
+        padding: 0 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        font-size: 0.82rem;
+        background: var(--soft);
+        width: 140px;
+      }
+
+      .date-range-inputs span {
+        font-size: 0.82rem;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .btn-clear-filters {
+        min-height: 40px;
+        padding: 0 16px;
+        border: 1px solid var(--accent);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--accent-dark);
+        font-size: 0.82rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: background 150ms;
+        display: none;
+      }
+
+      .btn-clear-filters.visible {
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .btn-clear-filters:hover {
+        background: #e8f6f0;
+      }
+
+      .btn-clear-test-data {
+        min-height: 40px;
+        padding: 0 16px;
+        border: 1px solid #f5c6cb;
+        border-radius: 8px;
+        background: #fff5f5;
+        color: #721c24;
+        font-size: 0.82rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: background 150ms;
+      }
+
+      .btn-clear-test-data:hover {
+        background: #f8d7da;
+      }
+
+      .btn-export {
+        min-height: 40px;
+        padding: 0 16px;
+        border: 1px solid var(--accent);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--accent-dark);
+        font-size: 0.82rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: background 150ms;
+      }
+
+      .btn-export:hover {
+        background: #e8f6f0;
+      }
+
+      .export-group {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-left: auto;
+      }
+
+      /* Search Results Table */
+      .search-results {
+        display: none;
+        margin-bottom: 24px;
+      }
+
+      .search-results.visible {
+        display: block;
+      }
+
+      .search-results-card {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface);
+        box-shadow: 0 4px 12px rgba(24, 32, 29, 0.04);
+        overflow: hidden;
+      }
+
+      .search-results-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+        background: var(--soft);
+      }
+
+      .search-results-header .results-count {
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: var(--ink);
+      }
+
+      .search-results-header .results-hint {
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .results-table-wrap {
+        overflow-x: auto;
+      }
+
+      .results-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 700px;
+      }
+
+      .results-table th {
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+      }
+
+      .results-table td {
+        padding: 10px 12px;
+        font-size: 0.85rem;
+        border-bottom: 1px solid var(--line);
+        vertical-align: middle;
+      }
+
+      .results-table tr {
+        cursor: pointer;
+        transition: background 120ms;
+      }
+
+      .results-table tr:hover {
+        background: #f0faf5;
+      }
+
+      .results-table .result-status {
+        display: inline-flex;
+        align-items: center;
+        height: 24px;
+        border-radius: 6px;
+        padding: 0 8px;
+        font-size: 0.72rem;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .result-status.status-confirmed { background: #d4edda; color: #155724; }
+      .result-status.status-checked-in { background: #cce5ff; color: #004085; }
+      .result-status.status-completed { background: #e2e3e5; color: #383d41; }
+      .result-status.status-cancelled { background: #f8d7da; color: #721c24; }
+      .result-status.status-pending { background: #fff3cd; color: #856404; }
+
+      .no-results {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--muted);
+        font-size: 0.92rem;
+        font-weight: 600;
+      }
+
+      /* Confirm Popup */
+      .confirm-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 200;
+        place-items: center;
+      }
+
+      .confirm-overlay.open {
+        display: grid;
+      }
+
+      .confirm-box {
+        background: var(--surface);
+        border-radius: 12px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+        padding: 28px;
+        max-width: 400px;
+        text-align: center;
+      }
+
+      .confirm-box h3 {
+        margin: 0 0 12px;
+        font-size: 1.05rem;
+        color: var(--ink);
+      }
+
+      .confirm-box p {
+        margin: 0 0 20px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+
+      .confirm-box .confirm-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+      }
+
+      .confirm-box .btn-confirm-yes {
+        min-height: 40px;
+        padding: 0 24px;
+        border: 0;
+        border-radius: 8px;
+        background: #dc3545;
+        color: #fff;
+        font-weight: 800;
+        font-size: 0.88rem;
+        cursor: pointer;
+        transition: background 150ms;
+      }
+
+      .confirm-box .btn-confirm-yes:hover {
+        background: #c82333;
+      }
+
+      .confirm-box .btn-confirm-no {
+        min-height: 40px;
+        padding: 0 24px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--ink);
+        font-weight: 800;
+        font-size: 0.88rem;
+        cursor: pointer;
+        transition: background 150ms;
+      }
+
+      .confirm-box .btn-confirm-no:hover {
+        background: var(--soft);
+      }
+
+      /* ===== AI Demand Prediction Button ===== */
+      .btn-ai-predict {
+        min-height: 40px;
+        padding: 0 16px;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #08271f, #0b3d30);
+        color: #c9a84c;
+        font-size: 0.82rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: opacity 150ms;
+        white-space: nowrap;
+      }
+      .btn-ai-predict:hover { opacity: 0.88; }
+      .btn-ai-predict:disabled { opacity: 0.5; cursor: not-allowed; }
+
+      /* ===== AI Demand Prediction Modal ===== */
+      .dp-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 10000;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 32px 16px;
+        overflow-y: auto;
+      }
+      .dp-overlay.open { display: flex; }
+
+      .dp-modal {
+        background: var(--surface);
+        border-radius: 16px;
+        max-width: 700px;
+        width: 100%;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .dp-header {
+        background: linear-gradient(135deg, #08271f, #0b3d30);
+        padding: 20px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+      .dp-header-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .dp-logo {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #c9a84c;
+        color: #08271f;
+        font-weight: 900;
+        font-size: 1.4rem;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+      .dp-title {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #c9a84c;
+        margin: 0;
+      }
+      .dp-subtitle {
+        font-size: 0.74rem;
+        color: rgba(255, 255, 255, 0.6);
+        margin: 3px 0 0;
+        letter-spacing: 0.03em;
+      }
+      .dp-close {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 1.7rem;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0 4px;
+        flex-shrink: 0;
+      }
+      .dp-close:hover { color: #fff; }
+
+      .dp-body {
+        padding: 24px;
+        overflow-y: auto;
+      }
+
+      /* Loading spinner */
+      .dp-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 64px 20px;
+        gap: 18px;
+      }
+      .dp-spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid rgba(8, 39, 31, 0.12);
+        border-top-color: #08271f;
+        border-radius: 50%;
+        animation: dpSpin 0.8s linear infinite;
+      }
+      @keyframes dpSpin { to { transform: rotate(360deg); } }
+      .dp-loading-text {
+        font-size: 0.9rem;
+        color: var(--muted);
+        font-weight: 600;
+        text-align: center;
+        line-height: 1.6;
+      }
+
+      /* Prediction sections */
+      .dp-section {
+        margin-bottom: 16px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        overflow: hidden;
+      }
+      .dp-section:last-child { margin-bottom: 0; }
+
+      .dp-section-header {
+        background: linear-gradient(135deg, #08271f, #0b3d30);
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .dp-section-title {
+        font-size: 0.84rem;
+        font-weight: 800;
+        color: #c9a84c;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .dp-section-content {
+        padding: 14px 16px;
+        font-size: 0.88rem;
+        line-height: 1.7;
+        color: var(--ink);
+        margin: 0;
+        background: var(--soft);
+        white-space: pre-wrap;
+      }
+
+      .dp-error {
+        padding: 24px;
+        background: #f8d7da;
+        border-radius: 10px;
+        color: #721c24;
+        font-size: 0.9rem;
+        text-align: center;
+        line-height: 1.6;
+      }
+
+      .dp-raw {
+        font-size: 0.88rem;
+        line-height: 1.7;
+        color: var(--ink);
+        white-space: pre-wrap;
+        padding: 4px;
+      }
+
+      .dp-footer {
+        padding: 16px 24px;
+        border-top: 1px solid var(--line);
+        flex-shrink: 0;
+        background: var(--surface);
+      }
+      .dp-close-btn {
+        display: block;
+        width: 100%;
+        padding: 13px;
+        background: linear-gradient(135deg, #08271f, #0b3d30);
+        color: #c9a84c;
+        border: none;
+        border-radius: 10px;
+        font-size: 0.92rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: opacity 150ms;
+      }
+      .dp-close-btn:hover { opacity: 0.88; }
+
+      @media (max-width: 760px) {
+        .cal-cell {
+          min-height: 70px;
+          padding: 2px;
+        }
+
+        .cal-booking {
+          font-size: 0.6rem;
+          padding: 1px 3px;
+        }
+
+        .month-nav .month-label {
+          min-width: 140px;
+          font-size: 1rem;
+        }
+
+        .dash-toolbar {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .stats-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .search-filter-bar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .search-filter-bar select {
+          min-width: unset;
+        }
+
+        .date-range-inputs {
+          flex-wrap: wrap;
+        }
+
+        .date-range-inputs input {
+          flex: 1;
+          min-width: 100px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="dash-header">
+      <nav class="nav">
+        <a class="brand" href="index.html" aria-label="Hotel Vinayagam home">
+          <span class="brand-mark">V</span>
+          <span>Hotel Vinayagam</span>
+        </a>
+        <div class="nav-actions">
+          <a href="index.html">Bookings</a>
+          <span class="nav-pill">Dashboard</span>
+          <button id="btnLogout" type="button" class="btn-logout">Logout</button>
+        </div>
+      </nav>
+    </header>
+
+    <div class="dash-container">
+      <div class="dash-toolbar">
+        <h1>Booking Calendar</h1>
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <div class="room-filter" id="roomFilter">
+            <button class="active" data-room="all">All rooms</button>
+            <button data-room="mini-standard">Mini Standard</button>
+            <button data-room="standard">Standard</button>
+            <button data-room="deluxe">Deluxe</button>
+            <button data-room="family">Family</button>
+          </div>
+          <button class="btn-today" id="btnToday" type="button">Today</button>
+        </div>
+      </div>
+
+      <div id="statsRow" class="stats-row"></div>
+
+      <div class="search-filter-bar" id="searchFilterBar">
+        <div class="search-input-wrap">
+          <span class="search-icon">&#128269;</span>
+          <input type="text" id="searchInput" placeholder="Search by guest name or phone..." />
+        </div>
+        <select id="filterStatus">
+          <option value="all">All Status</option>
+          <option value="Confirmed">Confirmed</option>
+          <option value="Checked in">Checked In</option>
+          <option value="Completed">Completed</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+        <select id="filterRoomType">
+          <option value="all">All Room Types</option>
+          <option value="mini-standard">Mini Standard</option>
+          <option value="standard">Standard</option>
+          <option value="deluxe">Deluxe</option>
+          <option value="family">Family</option>
+        </select>
+        <select id="filterDateRange">
+          <option value="all">All Dates</option>
+          <option value="this-week">This Week</option>
+          <option value="this-month">This Month</option>
+          <option value="last-month">Last Month</option>
+          <option value="custom">Custom Range</option>
+        </select>
+        <div class="date-range-inputs" id="customDateRange">
+          <input type="date" id="customFrom" />
+          <span>to</span>
+          <input type="date" id="customTo" />
+        </div>
+        <button class="btn-clear-filters" id="btnClearFilters" type="button">Clear Filters</button>
+        <div class="export-group">
+          <button class="btn-ai-predict" id="btnAiPredict" type="button">AI Demand Prediction</button>
+          <button class="btn-export" id="btnExportExcel" type="button">Export Excel</button>
+          <button class="btn-export" id="btnExportPdf" type="button">Export PDF</button>
+          <button class="btn-clear-test-data" id="btnClearTestData" type="button">Clear Test Data</button>
+        </div>
+      </div>
+
+      <div class="search-results" id="searchResults">
+        <div class="search-results-card">
+          <div class="search-results-header">
+            <span class="results-count" id="resultsCount"></span>
+            <span class="results-hint">Click a row to view on calendar</span>
+          </div>
+          <div class="results-table-wrap">
+            <table class="results-table">
+              <thead>
+                <tr>
+                  <th>Guest</th>
+                  <th>Phone</th>
+                  <th>Room</th>
+                  <th>Check In</th>
+                  <th>Check Out</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="resultsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="confirm-overlay" id="confirmOverlay">
+        <div class="confirm-box">
+          <h3>Clear Test Data</h3>
+          <p>Are you sure you want to delete all bookings? This cannot be undone.</p>
+          <div class="confirm-actions">
+            <button class="btn-confirm-yes" id="confirmYes" type="button">Yes</button>
+            <button class="btn-confirm-no" id="confirmNo" type="button">No</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><span class="legend-dot" style="background:#d4edda;border:1px solid #a3d9b1;"></span> Confirmed</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#fff3cd;border:1px solid #f0dfa0;"></span> Pending</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#cce5ff;border:1px solid #9ec5fe;"></span> Checked in</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#e2e3e5;border:1px solid #c6c8ca;"></span> Completed</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#f8d7da;border:1px solid #f1aeb5;"></span> Cancelled</div>
+      </div>
+
+      <div class="calendar-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);">
+          <div class="month-nav">
+            <button id="btnPrev" type="button" title="Previous month">&#8249;</button>
+            <span class="month-label" id="monthLabel"></span>
+            <button id="btnNext" type="button" title="Next month">&#8250;</button>
+          </div>
+        </div>
+        <div class="cal-head">
+          <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+        </div>
+        <div class="cal-grid" id="calGrid">
+          <div class="loading-msg" style="grid-column:1/-1;">Loading bookings...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== AI DEMAND PREDICTION MODAL ===== -->
+    <div class="dp-overlay" id="dpOverlay" role="dialog" aria-modal="true" aria-labelledby="dpTitle">
+      <div class="dp-modal">
+        <div class="dp-header">
+          <div class="dp-header-left">
+            <span class="dp-logo">V</span>
+            <div>
+              <h2 class="dp-title" id="dpTitle">AI Demand Prediction</h2>
+              <p class="dp-subtitle">Powered by Ollama llama3.2 &middot; Hotel Vinayagam</p>
+            </div>
+          </div>
+          <button class="dp-close" id="dpClose" type="button" aria-label="Close">&times;</button>
+        </div>
+        <div class="dp-body" id="dpBody"></div>
+        <div class="dp-footer">
+          <button class="dp-close-btn" id="dpCloseBtn" type="button">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="popup-overlay" id="popupOverlay">
+      <div class="popup">
+        <h3 id="popupTitle"></h3>
+        <div id="popupBody"></div>
+        <button class="popup-close" id="popupClose" type="button">Close</button>
+      </div>
+    </div>
+
+    <script>
+      const BOOKING_API = "http://localhost:4001/api";
+      const AUTH_API   = "http://localhost:4002/api";
+      const CHAT_API   = "http://localhost:5001";
+
+      (async function checkAuth() {
+        const token = sessionStorage.getItem("adminToken");
+        if (!token) {
+          window.location.href = "login.html";
+          return;
+        }
+        try {
+          const res = await fetch(`${AUTH_API}/admin/verify`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (!res.ok) throw new Error();
+        } catch {
+          sessionStorage.removeItem("adminToken");
+          window.location.href = "login.html";
+          return;
+        }
+      })();
+
+      const MAX_VISIBLE_PER_CELL = 3;
+
+      const formatter = new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        maximumFractionDigits: 0
+      });
+
+      const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+
+      let allBookings = [];
+      let currentYear = new Date().getFullYear();
+      let currentMonth = new Date().getMonth();
+      let activeRoom = "all";
+
+      const calGrid = document.getElementById("calGrid");
+      const monthLabel = document.getElementById("monthLabel");
+      const btnPrev = document.getElementById("btnPrev");
+      const btnNext = document.getElementById("btnNext");
+      const btnToday = document.getElementById("btnToday");
+      const statsRow = document.getElementById("statsRow");
+      const roomFilter = document.getElementById("roomFilter");
+      const popupOverlay = document.getElementById("popupOverlay");
+      const popupTitle = document.getElementById("popupTitle");
+      const popupBody = document.getElementById("popupBody");
+      const popupClose = document.getElementById("popupClose");
+
+      function toDateStr(d) {
+        return d.toISOString().slice(0, 10);
+      }
+
+      function parseDate(str) {
+        const [y, m, d] = String(str).slice(0, 10).split("-").map(Number);
+        return new Date(y, m - 1, d);
+      }
+
+      function statusClass(status) {
+        return "status-" + String(status).toLowerCase().replace(/\s+/g, "-");
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function normalizeBooking(b) {
+        return {
+          id: b.id,
+          name: b.guest_name || b.name,
+          phone: b.guest_phone || b.phone,
+          checkIn: String(b.check_in || b.checkIn).slice(0, 10),
+          checkOut: String(b.check_out || b.checkOut).slice(0, 10),
+          guests: Number(b.guests),
+          roomId: b.room_id || b.roomId,
+          roomName: b.room_name || b.roomName,
+          rooms: Number(b.rooms),
+          nights: Number(b.nights),
+          subtotal: Number(b.subtotal),
+          tax: Number(b.tax),
+          total: Number(b.total),
+          status: b.status || "Confirmed"
+        };
+      }
+
+      async function fetchBookings() {
+        const now = new Date();
+        const from = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+        const to = new Date(now.getFullYear() + 1, now.getMonth() + 1, 0);
+        const url = `${BOOKING_API}/bookings?from=${toDateStr(from)}&to=${toDateStr(to)}`;
+
+        try {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error("Failed to load bookings");
+          const data = await res.json();
+          allBookings = data.map(normalizeBooking);
+        } catch (err) {
+          console.error(err);
+          const saved = localStorage.getItem("hotelVinayagamBookings");
+          allBookings = saved ? JSON.parse(saved).map(normalizeBooking) : [];
+          const errDiv = document.createElement("div");
+          errDiv.className = "error-msg";
+          errDiv.textContent = "Could not reach backend — showing cached bookings.";
+          document.querySelector(".dash-container").insertBefore(errDiv, statsRow);
+        }
+      }
+
+      function getFilteredBookings() {
+        if (activeRoom === "all") return allBookings;
+        return allBookings.filter(b => b.roomId === activeRoom);
+      }
+
+      function getBookingsForDate(dateStr) {
+        return getFilteredBookings().filter(b => b.checkIn <= dateStr && b.checkOut > dateStr);
+      }
+
+      function renderStats() {
+        const bookings = getFilteredBookings();
+        const today = toDateStr(new Date());
+
+        const confirmed = bookings.filter(b => b.status === "Confirmed").length;
+        const checkedIn = bookings.filter(b => b.status === "Checked in").length;
+        const cancelled = bookings.filter(b => b.status === "Cancelled").length;
+        const todayBookings = getBookingsForDate(today).length;
+
+        const totalRevenue = bookings
+          .filter(b => b.status !== "Cancelled")
+          .reduce((sum, b) => sum + b.total, 0);
+
+        statsRow.innerHTML = `
+          <div class="stat-card">
+            <p class="stat-label">Today's Occupancy</p>
+            <p class="stat-value">${todayBookings}</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-label">Confirmed</p>
+            <p class="stat-value">${confirmed}</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-label">Checked In</p>
+            <p class="stat-value">${checkedIn}</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-label">Cancelled</p>
+            <p class="stat-value">${cancelled}</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-label">Revenue (excl. cancelled)</p>
+            <p class="stat-value">${formatter.format(totalRevenue)}</p>
+          </div>
+        `;
+      }
+
+      function renderCalendar() {
+        monthLabel.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+
+        const firstDay = new Date(currentYear, currentMonth, 1);
+        const lastDay = new Date(currentYear, currentMonth + 1, 0);
+        const startDow = firstDay.getDay();
+        const daysInMonth = lastDay.getDate();
+
+        const prevLast = new Date(currentYear, currentMonth, 0);
+        const prevDays = prevLast.getDate();
+
+        const today = toDateStr(new Date());
+        let html = "";
+
+        for (let i = 0; i < startDow; i++) {
+          const day = prevDays - startDow + 1 + i;
+          const d = new Date(currentYear, currentMonth - 1, day);
+          const dateStr = toDateStr(d);
+          const bookings = getBookingsForDate(dateStr);
+          html += buildCell(day, dateStr, true, false, bookings);
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const d = new Date(currentYear, currentMonth, day);
+          const dateStr = toDateStr(d);
+          const isToday = dateStr === today;
+          const bookings = getBookingsForDate(dateStr);
+          html += buildCell(day, dateStr, false, isToday, bookings);
+        }
+
+        const totalCells = startDow + daysInMonth;
+        const remaining = (7 - (totalCells % 7)) % 7;
+        for (let i = 1; i <= remaining; i++) {
+          const d = new Date(currentYear, currentMonth + 1, i);
+          const dateStr = toDateStr(d);
+          const bookings = getBookingsForDate(dateStr);
+          html += buildCell(i, dateStr, true, false, bookings);
+        }
+
+        calGrid.innerHTML = html;
+      }
+
+      function buildCell(day, dateStr, outside, isToday, bookings) {
+        let cls = "cal-cell";
+        if (outside) cls += " outside";
+        if (isToday) cls += " today";
+
+        let inner = `<span class="cal-day">${day}</span>`;
+
+        const visible = bookings.slice(0, MAX_VISIBLE_PER_CELL);
+        for (const b of visible) {
+          inner += `<span class="cal-booking ${statusClass(b.status)}" title="${escapeHtml(b.name)} — ${b.roomName} (${b.status})">${escapeHtml(b.name)}</span>`;
+        }
+
+        if (bookings.length > MAX_VISIBLE_PER_CELL) {
+          inner += `<span class="cal-more" data-date="${dateStr}">+${bookings.length - MAX_VISIBLE_PER_CELL} more</span>`;
+        }
+
+        return `<div class="${cls}" data-date="${dateStr}">${inner}</div>`;
+      }
+
+      const allStatuses = ["Confirmed", "Checked in", "Completed", "Cancelled"];
+
+      function showDayPopup(dateStr) {
+        popupOverlay.dataset.currentDate = dateStr;
+        const bookings = getBookingsForDate(dateStr);
+        const d = parseDate(dateStr);
+        popupTitle.textContent = d.toLocaleDateString("en-IN", {
+          weekday: "long", year: "numeric", month: "long", day: "numeric"
+        });
+
+        if (!bookings.length) {
+          popupBody.innerHTML = `<p style="color:var(--muted);">No bookings on this date.</p>`;
+        } else {
+          popupBody.innerHTML = bookings.map(b => `
+            <div class="popup-booking">
+              <div class="popup-guest">
+                <span class="cal-booking ${statusClass(b.status)}" style="display:inline-block;margin-right:6px;">${b.status}</span>
+                ${escapeHtml(b.name)}
+              </div>
+              <div class="popup-meta">
+                ${b.roomName} &middot; ${b.guests} guest${b.guests === 1 ? "" : "s"} &middot; ${b.checkIn} to ${b.checkOut} &middot; ${b.nights} night${b.nights === 1 ? "" : "s"} &middot; ${formatter.format(b.total)}
+              </div>
+              <div class="popup-actions">
+                ${allStatuses.map(s => {
+                  const isCurrent = s === b.status;
+                  const cancelClass = s === "Cancelled" ? " status-cancelled-btn" : "";
+                  return `<button type="button" data-status="${s}" data-id="${b.id}" class="${isCurrent ? "active-status" : ""}${cancelClass}" ${isCurrent ? "disabled" : ""}>${s}</button>`;
+                }).join("")}
+              </div>
+            </div>
+          `).join("");
+        }
+
+        popupOverlay.classList.add("open");
+      }
+
+      function clampMonth() {
+        const now = new Date();
+        const minDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+        const maxDate = new Date(now.getFullYear() + 1, now.getMonth(), 1);
+        const cur = new Date(currentYear, currentMonth, 1);
+
+        if (cur < minDate) {
+          currentYear = minDate.getFullYear();
+          currentMonth = minDate.getMonth();
+        } else if (cur > maxDate) {
+          currentYear = maxDate.getFullYear();
+          currentMonth = maxDate.getMonth();
+        }
+
+        btnPrev.disabled = cur <= minDate;
+        btnNext.disabled = cur >= maxDate;
+      }
+
+      function render() {
+        clampMonth();
+        renderStats();
+        renderCalendar();
+      }
+
+      btnPrev.addEventListener("click", () => {
+        currentMonth--;
+        if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+        render();
+      });
+
+      btnNext.addEventListener("click", () => {
+        currentMonth++;
+        if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+        render();
+      });
+
+      btnToday.addEventListener("click", () => {
+        const now = new Date();
+        currentYear = now.getFullYear();
+        currentMonth = now.getMonth();
+        render();
+      });
+
+      roomFilter.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-room]");
+        if (!btn) return;
+        activeRoom = btn.dataset.room;
+        roomFilter.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        render();
+      });
+
+      document.getElementById("btnLogout").addEventListener("click", async () => {
+        const token = sessionStorage.getItem("adminToken");
+        if (token) {
+          try {
+            await fetch(`${AUTH_API}/admin/logout`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}` }
+            });
+          } catch {}
+        }
+        sessionStorage.removeItem("adminToken");
+        window.location.href = "login.html";
+      });
+
+      calGrid.addEventListener("click", (e) => {
+        const cell = e.target.closest(".cal-cell[data-date]");
+        if (!cell) return;
+        showDayPopup(cell.dataset.date);
+      });
+
+      popupBody.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".popup-actions [data-status][data-id]");
+        if (!btn || btn.disabled) return;
+
+        const bookingId = btn.dataset.id;
+        const newStatus = btn.dataset.status;
+        const bookingDiv = btn.closest(".popup-booking");
+
+        bookingDiv.querySelectorAll(".popup-actions button").forEach(b => b.disabled = true);
+
+        try {
+          const res = await fetch(`${BOOKING_API}/bookings/${bookingId}/status`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: newStatus })
+          });
+
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.message || "Status update failed.");
+          }
+
+          const updated = normalizeBooking(await res.json());
+          const idx = allBookings.findIndex(b => b.id === bookingId);
+          if (idx !== -1) allBookings[idx] = updated;
+
+          render();
+          showDayPopup(popupOverlay.dataset.currentDate);
+        } catch (err) {
+          alert(err.message);
+          bookingDiv.querySelectorAll(".popup-actions button").forEach(b => b.disabled = false);
+        }
+      });
+
+      popupClose.addEventListener("click", () => popupOverlay.classList.remove("open"));
+      popupOverlay.addEventListener("click", (e) => {
+        if (e.target === popupOverlay) popupOverlay.classList.remove("open");
+      });
+
+      fetchBookings().then(render);
+
+      // --- Search, Filter & Clear Test Data ---
+
+      const searchInput = document.getElementById("searchInput");
+      const filterStatus = document.getElementById("filterStatus");
+      const filterRoomType = document.getElementById("filterRoomType");
+      const filterDateRange = document.getElementById("filterDateRange");
+      const customDateRange = document.getElementById("customDateRange");
+      const customFrom = document.getElementById("customFrom");
+      const customTo = document.getElementById("customTo");
+      const btnClearFilters = document.getElementById("btnClearFilters");
+      const searchResults = document.getElementById("searchResults");
+      const resultsBody = document.getElementById("resultsBody");
+      const resultsCount = document.getElementById("resultsCount");
+      const confirmOverlay = document.getElementById("confirmOverlay");
+
+      function isFilterActive() {
+        return searchInput.value.trim() !== "" ||
+          filterStatus.value !== "all" ||
+          filterRoomType.value !== "all" ||
+          filterDateRange.value !== "all";
+      }
+
+      function getDateRange() {
+        const now = new Date();
+        const range = filterDateRange.value;
+
+        if (range === "this-week") {
+          const dayOfWeek = now.getDay();
+          const start = new Date(now);
+          start.setDate(now.getDate() - dayOfWeek);
+          const end = new Date(start);
+          end.setDate(start.getDate() + 7);
+          return { from: toDateStr(start), to: toDateStr(end) };
+        }
+
+        if (range === "this-month") {
+          const start = new Date(now.getFullYear(), now.getMonth(), 1);
+          const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+          return { from: toDateStr(start), to: toDateStr(end) };
+        }
+
+        if (range === "last-month") {
+          const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          const end = new Date(now.getFullYear(), now.getMonth(), 0);
+          return { from: toDateStr(start), to: toDateStr(end) };
+        }
+
+        if (range === "custom") {
+          return { from: customFrom.value || "", to: customTo.value || "" };
+        }
+
+        return null;
+      }
+
+      function getSearchFilteredBookings() {
+        let results = allBookings;
+
+        const query = searchInput.value.trim().toLowerCase();
+        if (query) {
+          results = results.filter(b =>
+            b.name.toLowerCase().includes(query) ||
+            b.phone.toLowerCase().includes(query)
+          );
+        }
+
+        if (filterStatus.value !== "all") {
+          results = results.filter(b => b.status === filterStatus.value);
+        }
+
+        if (filterRoomType.value !== "all") {
+          results = results.filter(b => b.roomId === filterRoomType.value);
+        }
+
+        const dateRange = getDateRange();
+        if (dateRange) {
+          if (dateRange.from) {
+            results = results.filter(b => b.checkOut >= dateRange.from);
+          }
+          if (dateRange.to) {
+            results = results.filter(b => b.checkIn <= dateRange.to);
+          }
+        }
+
+        return results;
+      }
+
+      function renderSearchResults() {
+        const active = isFilterActive();
+        btnClearFilters.classList.toggle("visible", active);
+        searchResults.classList.toggle("visible", active);
+
+        if (!active) return;
+
+        const results = getSearchFilteredBookings();
+        resultsCount.textContent = `${results.length} booking${results.length === 1 ? "" : "s"} found`;
+
+        if (!results.length) {
+          resultsBody.innerHTML = `<tr><td colspan="7" class="no-results">No results found</td></tr>`;
+          return;
+        }
+
+        resultsBody.innerHTML = results.map(b => `
+          <tr data-booking-date="${b.checkIn}">
+            <td><strong>${escapeHtml(b.name)}</strong></td>
+            <td>${escapeHtml(b.phone)}</td>
+            <td>${b.roomName}</td>
+            <td>${b.checkIn}</td>
+            <td>${b.checkOut}</td>
+            <td>${formatter.format(b.total)}</td>
+            <td><span class="result-status ${statusClass(b.status)}">${b.status}</span></td>
+          </tr>
+        `).join("");
+      }
+
+      searchInput.addEventListener("input", renderSearchResults);
+      filterStatus.addEventListener("change", renderSearchResults);
+      filterRoomType.addEventListener("change", renderSearchResults);
+
+      filterDateRange.addEventListener("change", () => {
+        customDateRange.classList.toggle("visible", filterDateRange.value === "custom");
+        renderSearchResults();
+      });
+
+      customFrom.addEventListener("change", renderSearchResults);
+      customTo.addEventListener("change", renderSearchResults);
+
+      btnClearFilters.addEventListener("click", () => {
+        searchInput.value = "";
+        filterStatus.value = "all";
+        filterRoomType.value = "all";
+        filterDateRange.value = "all";
+        customFrom.value = "";
+        customTo.value = "";
+        customDateRange.classList.remove("visible");
+        renderSearchResults();
+      });
+
+      resultsBody.addEventListener("click", (e) => {
+        const row = e.target.closest("tr[data-booking-date]");
+        if (!row) return;
+        const dateStr = row.dataset.bookingDate;
+        const d = parseDate(dateStr);
+        currentYear = d.getFullYear();
+        currentMonth = d.getMonth();
+        render();
+        showDayPopup(dateStr);
+        searchResults.scrollIntoView({ behavior: "smooth", block: "end" });
+      });
+
+      // Clear Test Data with confirmation
+      document.getElementById("btnClearTestData").addEventListener("click", () => {
+        confirmOverlay.classList.add("open");
+      });
+
+      document.getElementById("confirmNo").addEventListener("click", () => {
+        confirmOverlay.classList.remove("open");
+      });
+
+      confirmOverlay.addEventListener("click", (e) => {
+        if (e.target === confirmOverlay) confirmOverlay.classList.remove("open");
+      });
+
+      document.getElementById("confirmYes").addEventListener("click", async () => {
+        confirmOverlay.classList.remove("open");
+        try {
+          const res = await fetch(`${BOOKING_API}/bookings`, {
+            method: "DELETE"
+          });
+          if (!res.ok) throw new Error("Failed to clear bookings.");
+          allBookings = [];
+          localStorage.removeItem("hotelVinayagamBookings");
+          render();
+          renderSearchResults();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+
+      // --- Export Excel ---
+      document.getElementById("btnExportExcel").addEventListener("click", () => {
+        const bookings = isFilterActive() ? getSearchFilteredBookings() : allBookings;
+        if (!bookings.length) { alert("No bookings to export."); return; }
+
+        const rows = bookings.map(b => ({
+          "Guest Name": b.name,
+          "Phone": b.phone,
+          "Check In": b.checkIn,
+          "Check Out": b.checkOut,
+          "Room Type": b.roomName,
+          "Total (INR)": b.total,
+          "Status": b.status
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws["!cols"] = [
+          { wch: 22 }, { wch: 15 }, { wch: 12 }, { wch: 12 },
+          { wch: 16 }, { wch: 12 }, { wch: 14 }
+        ];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Bookings");
+
+        const today = toDateStr(new Date());
+        XLSX.writeFile(wb, `Hotel_Vinayagam_Bookings_${today}.xlsx`);
+      });
+
+      // --- Export PDF ---
+      document.getElementById("btnExportPdf").addEventListener("click", () => {
+        const bookings = isFilterActive() ? getSearchFilteredBookings() : allBookings;
+        if (!bookings.length) { alert("No bookings to export."); return; }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const today = new Date();
+        const dateLabel = today.toLocaleDateString("en-IN", {
+          year: "numeric", month: "long", day: "numeric"
+        });
+
+        doc.setFontSize(20);
+        doc.setFont("helvetica", "bold");
+        doc.text("Hotel Vinayagam", 105, 20, { align: "center" });
+
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "normal");
+        doc.text("Booking Report", 105, 28, { align: "center" });
+
+        doc.setFontSize(9);
+        doc.setTextColor(100);
+        doc.text(`Generated: ${dateLabel}`, 105, 34, { align: "center" });
+        doc.text(`Total bookings: ${bookings.length}`, 105, 39, { align: "center" });
+        doc.setTextColor(0);
+
+        const tableRows = bookings.map(b => [
+          b.name, b.phone, b.checkIn, b.checkOut,
+          b.roomName, formatter.format(b.total), b.status
+        ]);
+
+        doc.autoTable({
+          startY: 45,
+          head: [["Guest Name", "Phone", "Check In", "Check Out", "Room Type", "Total", "Status"]],
+          body: tableRows,
+          styles: { fontSize: 8, cellPadding: 3 },
+          headStyles: {
+            fillColor: [8, 39, 31],
+            textColor: [255, 255, 255],
+            fontStyle: "bold",
+            fontSize: 8
+          },
+          alternateRowStyles: { fillColor: [244, 247, 243] },
+          columnStyles: {
+            5: { halign: "right" },
+            6: { fontStyle: "bold" }
+          },
+          margin: { left: 14, right: 14 }
+        });
+
+        const revenue = bookings
+          .filter(b => b.status !== "Cancelled")
+          .reduce((sum, b) => sum + b.total, 0);
+        const finalY = doc.lastAutoTable.finalY + 10;
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total Revenue (excl. cancelled): ${formatter.format(revenue)}`, 196, finalY, { align: "right" });
+
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(150);
+        doc.text("Hotel Vinayagam — Main Road, Turaiyur, Tamil Nadu", 105, doc.internal.pageSize.height - 10, { align: "center" });
+
+        doc.save(`Hotel_Vinayagam_Bookings_${toDateStr(today)}.pdf`);
+      });
+
+      // ===== AI DEMAND PREDICTION =====
+
+      const dpOverlay = document.getElementById("dpOverlay");
+      const dpBody = document.getElementById("dpBody");
+      const btnAiPredict = document.getElementById("btnAiPredict");
+
+      function closeDpModal() { dpOverlay.classList.remove("open"); }
+
+      document.getElementById("dpClose").addEventListener("click", closeDpModal);
+      document.getElementById("dpCloseBtn").addEventListener("click", closeDpModal);
+      dpOverlay.addEventListener("click", (e) => { if (e.target === dpOverlay) closeDpModal(); });
+
+      function parsePredictionSections(text) {
+        const defs = [
+          { key: "Busy Days Forecast" },
+          { key: "Popular Room Types" },
+          { key: "Revenue Insights" },
+          { key: "Staff Planning Tips" },
+          { key: "Pricing Suggestions" },
+        ];
+        const results = [];
+        for (let i = 0; i < defs.length; i++) {
+          const header = `**${defs[i].key}**`;
+          const idx = text.indexOf(header);
+          if (idx === -1) continue;
+          const start = idx + header.length;
+          let end = text.length;
+          for (let j = i + 1; j < defs.length; j++) {
+            const ni = text.indexOf(`**${defs[j].key}**`, start);
+            if (ni !== -1 && ni < end) end = ni;
+          }
+          results.push({ title: defs[i].key, content: text.slice(start, end).trim() });
+        }
+        return results;
+      }
+
+      function renderPrediction(prediction) {
+        const sections = parsePredictionSections(prediction);
+        if (!sections.length) {
+          return `<div class="dp-raw">${escapeHtml(prediction)}</div>`;
+        }
+        return sections.map(s => `
+          <div class="dp-section">
+            <div class="dp-section-header">
+              <h3 class="dp-section-title">${escapeHtml(s.title)}</h3>
+            </div>
+            <p class="dp-section-content">${escapeHtml(s.content)}</p>
+          </div>`).join("");
+      }
+
+      btnAiPredict.addEventListener("click", async () => {
+        dpBody.innerHTML = `
+          <div class="dp-loading">
+            <div class="dp-spinner"></div>
+            <p class="dp-loading-text">Analysing booking data with AI&hellip;<br>This may take 15&ndash;30 seconds.</p>
+          </div>`;
+        dpOverlay.classList.add("open");
+        btnAiPredict.disabled = true;
+
+        try {
+          const res = await fetch(`${CHAT_API}/demand-prediction`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({})
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            dpBody.innerHTML = `<div class="dp-error">${escapeHtml(data.error || "Failed to generate prediction.")}</div>`;
+          } else {
+            dpBody.innerHTML = renderPrediction(data.prediction);
+          }
+        } catch {
+          dpBody.innerHTML = `<div class="dp-error">Unable to reach the AI service. Please make sure Ollama and the Python chat-service are running on port 5001.</div>`;
+        } finally {
+          btnAiPredict.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

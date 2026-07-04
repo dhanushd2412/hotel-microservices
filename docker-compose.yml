@@ -1,0 +1,89 @@
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: hotel_ms_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hotel_vinayagam
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: hotelvinayagam123
+    ports:
+      - "5432:5432"
+    volumes:
+      - hotel_ms_pgdata:/var/lib/postgresql/data
+      - ./booking-service/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  booking-service:
+    build:
+      context: ./booking-service
+    container_name: hotel_ms_booking
+    restart: unless-stopped
+    environment:
+      PORT: 4001
+      DATABASE_URL: postgres://postgres:hotelvinayagam123@postgres:5432/hotel_vinayagam
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "4001:4001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: hotel_ms_auth
+    restart: unless-stopped
+    environment:
+      PORT: 4002
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: hotel123
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "4002:4002"
+
+  chat-service:
+    build:
+      context: ./chat-service
+    container_name: hotel_ms_chat
+    restart: unless-stopped
+    environment:
+      # Points to booking-service using Docker's internal DNS
+      BOOKING_SERVICE_URL: http://booking-service:4001
+      # Ollama runs on the host machine, not inside Docker
+      OLLAMA_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: llama3.2
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "5001:5001"
+    depends_on:
+      - booking-service
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: hotel_ms_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - booking-service
+      - auth-service
+      - chat-service
+
+  adminer:
+    image: adminer:latest
+    container_name: hotel_ms_adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  hotel_ms_pgdata:

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Login — Hotel Vinayagam</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      body {
+        background: var(--soft);
+      }
+
+      .dash-header {
+        background: linear-gradient(135deg, #08271f, #0b3d30);
+        color: #fff;
+        padding: 24px;
+      }
+
+      .dash-header .nav {
+        max-width: 1180px;
+        margin: 0 auto;
+      }
+
+      .dash-header .nav-actions a {
+        color: #fff;
+        text-decoration: none;
+        font-size: 0.88rem;
+        font-weight: 600;
+        opacity: 0.8;
+        transition: opacity 150ms;
+      }
+
+      .dash-header .nav-actions a:hover {
+        opacity: 1;
+      }
+
+      .login-wrap {
+        display: grid;
+        place-items: center;
+        min-height: calc(100vh - 84px);
+        padding: 24px;
+      }
+
+      .login-card {
+        width: 100%;
+        max-width: 380px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        box-shadow: 0 12px 24px rgba(24, 32, 29, 0.07);
+        padding: 32px 28px;
+      }
+
+      .login-card h1 {
+        margin: 0 0 6px;
+        font-size: 1.4rem;
+      }
+
+      .login-card p {
+        margin: 0 0 24px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .login-card label {
+        display: block;
+        margin-bottom: 14px;
+      }
+
+      .login-card button {
+        width: 100%;
+        min-height: 48px;
+        margin-top: 8px;
+        border: 0;
+        border-radius: 8px;
+        color: #fff;
+        background: var(--accent);
+        font-weight: 800;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: background 150ms;
+      }
+
+      .login-card button:hover {
+        background: var(--accent-dark);
+      }
+
+      .login-card button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .login-error {
+        margin: 0 0 16px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        background: #f8d7da;
+        color: #721c24;
+        font-size: 0.88rem;
+        font-weight: 600;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="dash-header">
+      <nav class="nav">
+        <a class="brand" href="index.html" aria-label="Hotel Vinayagam home">
+          <span class="brand-mark">V</span>
+          <span>Hotel Vinayagam</span>
+        </a>
+        <div class="nav-actions">
+          <a href="index.html">Bookings</a>
+        </div>
+      </nav>
+    </header>
+
+    <div class="login-wrap">
+      <form class="login-card" id="loginForm">
+        <h1>Admin Login</h1>
+        <p>Sign in to access the booking dashboard.</p>
+        <div class="login-error" id="loginError"></div>
+        <label>
+          Username
+          <input id="username" type="text" placeholder="Enter username" required autocomplete="username" />
+        </label>
+        <label>
+          Password
+          <input id="password" type="password" placeholder="Enter password" required autocomplete="current-password" />
+        </label>
+        <button type="submit">Sign in</button>
+      </form>
+    </div>
+
+    <script>
+      const AUTH_API = "http://localhost:4002/api";
+
+      const existingToken = sessionStorage.getItem("adminToken");
+      if (existingToken) {
+        fetch(`${AUTH_API}/admin/verify`, {
+          headers: { Authorization: `Bearer ${existingToken}` }
+        })
+          .then((res) => { if (res.ok) window.location.href = "dashboard.html"; })
+          .catch(() => {});
+      }
+
+      const loginForm = document.getElementById("loginForm");
+      const loginError = document.getElementById("loginError");
+      const submitBtn = loginForm.querySelector("button[type='submit']");
+
+      loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        loginError.style.display = "none";
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Signing in...";
+
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value;
+
+        try {
+          const res = await fetch(`${AUTH_API}/admin/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password })
+          });
+
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.message || "Login failed.");
+          }
+
+          const { token } = await res.json();
+          sessionStorage.setItem("adminToken", token);
+          window.location.href = "dashboard.html";
+        } catch (err) {
+          loginError.textContent = err.message;
+          loginError.style.display = "block";
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Sign in";
+        }
+      });
+    </script>
+  </body>
+</html>
