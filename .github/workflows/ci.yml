@@ -1,3 +1,4 @@
+# Builds and pushes Docker images for all microservices on push to main
 name: Build and Push Docker Images
 
 on:
