@@ -42,8 +42,8 @@ const state = {
   bookedRanges: []
 };
 
-const BOOKING_API = "http://localhost:4001/api";
-const CHAT_API = "http://localhost:5001";
+const BOOKING_API = "/api/bookings";
+const CHAT_API = "/api/chat";
 
 const formatter = new Intl.NumberFormat("en-IN", {
   style: "currency",
@@ -283,7 +283,7 @@ async function fetchBookedDates(roomId) {
     const to = toDateInput(futureDate);
 
     const response = await fetch(
-      `${BOOKING_API}/bookings/booked-dates?roomId=${encodeURIComponent(roomId)}&from=${from}&to=${to}`
+      `${BOOKING_API}/booked-dates?roomId=${encodeURIComponent(roomId)}&from=${from}&to=${to}`
     );
     if (!response.ok) throw new Error("Failed to fetch booked dates.");
     state.bookedRanges = await response.json();
@@ -413,7 +413,7 @@ bookingForm.addEventListener("submit", async (event) => {
 
 async function saveBookingToBackend(booking) {
   try {
-    const response = await fetch(`${BOOKING_API}/bookings`, {
+    const response = await fetch(`${BOOKING_API}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -502,7 +502,7 @@ async function checkGroupAvailability() {
     let bookedCount = 0;
     try {
       const res = await fetch(
-        `${BOOKING_API}/bookings/booked-dates?roomId=${encodeURIComponent(room.id)}&from=${ciVal}&to=${coVal}`
+        `${BOOKING_API}/booked-dates?roomId=${encodeURIComponent(room.id)}&from=${ciVal}&to=${coVal}`
       );
       if (res.ok) {
         const booked = await res.json();

@@ -1176,9 +1176,9 @@
     </div>
 
     <script>
-      const BOOKING_API = "http://localhost:4001/api";
-      const AUTH_API   = "http://localhost:4002/api";
-      const CHAT_API   = "http://localhost:5001";
+      const BOOKING_API = "/api/bookings";
+      const AUTH_API   = "/api/auth";
+      const CHAT_API   = "/api/chat";
 
       (async function checkAuth() {
         const token = sessionStorage.getItem("adminToken");
@@ -1273,7 +1273,7 @@
         const now = new Date();
         const from = new Date(now.getFullYear() - 1, now.getMonth(), 1);
         const to = new Date(now.getFullYear() + 1, now.getMonth() + 1, 0);
-        const url = `${BOOKING_API}/bookings?from=${toDateStr(from)}&to=${toDateStr(to)}`;
+        const url = `${BOOKING_API}?from=${toDateStr(from)}&to=${toDateStr(to)}`;
 
         try {
           const res = await fetch(url);
@@ -1517,7 +1517,7 @@
         bookingDiv.querySelectorAll(".popup-actions button").forEach(b => b.disabled = true);
 
         try {
-          const res = await fetch(`${BOOKING_API}/bookings/${bookingId}/status`, {
+          const res = await fetch(`${BOOKING_API}/${bookingId}/status`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status: newStatus })
@@ -1712,7 +1712,7 @@
       document.getElementById("confirmYes").addEventListener("click", async () => {
         confirmOverlay.classList.remove("open");
         try {
-          const res = await fetch(`${BOOKING_API}/bookings`, {
+          const res = await fetch(`${BOOKING_API}`, {
             method: "DELETE"
           });
           if (!res.ok) throw new Error("Failed to clear bookings.");
