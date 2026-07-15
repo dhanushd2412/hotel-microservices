@@ -7,7 +7,11 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, origins=[os.environ.get("CORS_ORIGIN", "http://localhost:3000")])
+# Requests now arrive via the Ingress, which can be reached at different
+# hosts (minikube ip, NodePort, custom domain). Default to allowing any
+# origin instead of a single hardcoded one; set CORS_ORIGIN to lock this
+# down to a specific origin if needed.
+CORS(app, origins=os.environ.get("CORS_ORIGIN", "*"))
 
 BOOKING_SERVICE_URL = os.environ.get("BOOKING_SERVICE_URL", "http://localhost:4001")
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")

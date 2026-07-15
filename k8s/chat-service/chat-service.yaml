@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-service
+  labels:
+    app: chat-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat-service
+  template:
+    metadata:
+      labels:
+        app: chat-service
+    spec:
+      containers:
+        - name: chat-service
+          image: dhanushd2412/chat-service:latest
+          ports:
+            - containerPort: 5001
+          env:
+            # In-cluster DNS name for booking-service
+            - name: BOOKING_SERVICE_URL
+              value: "http://booking-service:4001"
+            # Ollama runs on the host machine, not in the cluster.
+            # minikube exposes the host at host.minikube.internal.
+            - name: OLLAMA_URL
+              value: "http://host.minikube.internal:11434"
+            - name: OLLAMA_MODEL
+              value: "llama3.2"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-service
+spec:
+  type: ClusterIP
+  selector:
+    app: chat-service
+  ports:
+    - port: 5001
+      targetPort: 5001

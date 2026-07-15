@@ -8,7 +8,11 @@ dotenv.config();
 const app = express();
 const port = Number(process.env.PORT || 4001);
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || "http://localhost:3000" }));
+// Requests now arrive via the Ingress, which can be reached at different
+// hosts (minikube ip, NodePort, custom domain). Default to reflecting the
+// request's own origin instead of a single hardcoded one; set CORS_ORIGIN
+// to lock this down to a specific origin if needed.
+app.use(cors({ origin: process.env.CORS_ORIGIN || true }));
 app.use(express.json());
 
 const roomTypes = [
